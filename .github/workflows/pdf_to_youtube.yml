@@ -1,53 +1,65 @@
-name: Build YouTube Video from PDFs (Batch)
+name: PDF to Video Auto-Renderer
 
 on:
   workflow_dispatch:
     inputs:
-      file_ids:
-        description: 'JSON string of Google Drive File IDs'
+      driveFileId:
+        description: 'ID file PDF di Google Drive'
         required: true
-      focus_keyword:
-        description: 'Target SEO keyword'
+        type: string
+      style:
+        description: 'Gaya Narasi'
         required: true
-      koboi_api_key:
-        description: 'Koboi API Key for LLM'
+        type: string
+      voice:
+        description: 'ID Suara Gemini'
         required: true
-      youtube_client_secret:
-        description: 'YouTube Client Secret JSON String'
+        type: string
+      bgmFileId:
+        description: 'ID file BGM di Drive'
+        required: false
+        type: string
+        default: 'NONE'
+      apiKeysList:
+        description: 'Daftar API Key Gemini/KoboiLLM (Pemisah Koma)'
         required: true
-      gdrive_credentials:
-        description: 'Google Drive Project Credentials JSON String'
+        type: string
+      slideDelay:
+        description: 'Jeda Durasi Antar Slide (Detik)'
         required: true
+        type: string
+      targetFolderId:
+        description: 'ID Folder Tujuan di Drive'
+        required: false
+        type: string
+        default: 'NONE'
 
 jobs:
-  build-and-upload:
+  build-and-render:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    timeout-minutes: 60
+
     steps:
-      - name: Checkout Repo
+      - name: 📥 Ambil Kode Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: ⚙️ Siapkan Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.10'
+          node-version: '18'
 
-      - name: Install System Dependencies
+      - name: 🛠️ Install FFmpeg & Poppler
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg imagemagick
+          sudo apt-get install -y ffmpeg poppler-utils
 
-      - name: Configure ImageMagick Policy (for MoviePy text clips if needed)
+      - name: 📦 Install Library Node.js (OpenAI)
+        run: npm install openai googleapis fluent-ffmpeg
+
+      - name: 🚀 Jalankan Mesin Utama (worker.js)
         run: |
-          sudo sed -i 's/<policy domain="path" rights="none" pattern="@\*"/<!--<policy domain="path" rights="none" pattern="@\*"-->/' /etc/ImageMagick-6/policy.xml || true
-          
-      - name: Install Python Dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run Automator Script
+          node worker.js "${{ github.event.inputs.driveFileId }}" "${{ github.event.inputs.style }}" "${{ github.event.inputs.voice }}" "${{ github.event.inputs.bgmFileId }}" "${{ github.event.inputs.apiKeysList }}" "${{ github.event.inputs.slideDelay }}" "${{ github.event.inputs.targetFolderId }}"
         env:
-          KOBOI_API_KEY: ${{ github.event.inputs.koboi_api_key }}
-          YOUTUBE_CLIENT_SECRET: ${{ github.event.inputs.youtube_client_secret }}
-          GDRIVE_CREDENTIALS: ${{ github.event.inputs.gdrive_credentials }}
-        run: python main.py '${{ github.event.inputs.file_ids }}' '${{ github.event.inputs.focus_keyword }}'
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
