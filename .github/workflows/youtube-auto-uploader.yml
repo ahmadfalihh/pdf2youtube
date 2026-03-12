@@ -1,0 +1,34 @@
+name: YouTube Auto-Uploader (Smart & Random)
+
+on:
+  schedule:
+    # Bangun setiap 1 jam sekali pada menit ke-0
+    - cron: '0 * * * *'
+  workflow_dispatch: # Tombol manual untuk testing
+
+jobs:
+  upload-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 📥 Ambil Kode Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Siapkan Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Library
+        run: npm install openai googleapis
+
+      - name: 🚀 Jalankan Mesin Uploader (yt-uploader.js)
+        run: node yt-uploader.js
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          KOBOI_API_KEY: ${{ secrets.KOBOI_API_KEY }}
+          FOLDER_ANTREAN_ID: "MASUKKAN_ID_FOLDER_ANTREAN_DISINI" # Ganti dengan ID folder kamu
+          FOLDER_SELESAI_ID: "MASUKKAN_ID_FOLDER_ARSIP_DISINI"   # Ganti dengan ID folder kamu
