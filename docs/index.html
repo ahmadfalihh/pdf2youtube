@@ -212,6 +212,21 @@
         </div>
 
         <div class="form-group">
+            <label for="koboiApiKey">Koboi API Key (for LLM)</label>
+            <input type="password" id="koboiApiKey" placeholder="sk-...">
+        </div>
+
+        <div class="form-group">
+            <label for="youtubeSecret">YouTube Client Secret (JSON)</label>
+            <textarea id="youtubeSecret" placeholder='{"installed":{"client_id":"..."}}' rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="gdriveSecret">Google Drive Credentials (JSON)</label>
+            <textarea id="gdriveSecret" placeholder='{"type":"service_account","project_id":"..."}' rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
             <label>PDF Presentations</label>
             <div class="file-upload-wrapper">
                 <input type="file" id="pdfFiles" multiple accept=".pdf" />
@@ -251,9 +266,12 @@
             const repo = document.getElementById('ghRepo').value.trim();
             const token = document.getElementById('ghToken').value.trim();
             const keyword = document.getElementById('focusKeyword').value.trim();
+            const koboiKey = document.getElementById('koboiApiKey').value.trim();
+            const ytSecret = document.getElementById('youtubeSecret').value.trim();
+            const driveSecret = document.getElementById('gdriveSecret').value.trim();
 
-            if(!clientId || !repo || !token || !keyword || selectedFiles.length === 0) {
-                alert("Please fill all fields and select at least one PDF file.");
+            if(!clientId || !repo || !token || !keyword || !koboiKey || !ytSecret || !driveSecret || selectedFiles.length === 0) {
+                alert("Please fill all fields, provide credentials, and select at least one PDF file.");
                 return;
             }
 
@@ -274,7 +292,7 @@
                         }
                         driveAccessToken = response.access_token;
                         logStatus("Successfully authenticated with Google Drive.");
-                        await processFiles(repo, token, keyword);
+                        await processFiles(repo, token, keyword, koboiKey, ytSecret, driveSecret);
                     },
                 });
                 tokenClient.requestAccessToken();
@@ -284,7 +302,7 @@
             }
         }
 
-        async function processFiles(repo, ghToken, keyword) {
+        async function processFiles(repo, ghToken, keyword, koboiKey, ytSecret, driveSecret) {
             try {
                 const fileIds = [];
                 for (let i = 0; i < selectedFiles.length; i++) {
@@ -301,7 +319,7 @@
 
                 if(fileIds.length > 0) {
                     logStatus("All files uploaded. Triggering GitHub Actions...");
-                    await triggerGitHubAction(repo, ghToken, fileIds, keyword);
+                    await triggerGitHubAction(repo, ghToken, fileIds, keyword, koboiKey, ytSecret, driveSecret);
                 } else {
                     logStatus("No files were successfully uploaded. Aborting.");
                     document.getElementById('startBtn').disabled = false;
@@ -335,13 +353,16 @@
             return data.id;
         }
 
-        async function triggerGitHubAction(repo, token, fileIds, keyword) {
+        async function triggerGitHubAction(repo, token, fileIds, keyword, koboiKey, ytSecret, driveSecret) {
             const url = `https://api.github.com/repos/${repo}/actions/workflows/pdf_to_youtube.yml/dispatches`;
             const payload = {
                 ref: 'main',
                 inputs: {
                     file_ids: JSON.stringify(fileIds),
-                    focus_keyword: keyword
+                    focus_keyword: keyword,
+                    koboi_api_key: koboiKey,
+                    youtube_client_secret: ytSecret,
+                    gdrive_credentials: driveSecret
                 }
             };
 

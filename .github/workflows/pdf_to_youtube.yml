@@ -9,6 +9,15 @@ on:
       focus_keyword:
         description: 'Target SEO keyword'
         required: true
+      koboi_api_key:
+        description: 'Koboi API Key for LLM'
+        required: true
+      youtube_client_secret:
+        description: 'YouTube Client Secret JSON String'
+        required: true
+      gdrive_credentials:
+        description: 'Google Drive Project Credentials JSON String'
+        required: true
 
 jobs:
   build-and-upload:
@@ -36,7 +45,7 @@ jobs:
 
       - name: Run Automator Script
         env:
-          KOBOI_API_KEY: ${{ secrets.KOBOI_API_KEY }}
-          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
+          KOBOI_API_KEY: ${{ github.event.inputs.koboi_api_key }}
+          YOUTUBE_CLIENT_SECRET: ${{ github.event.inputs.youtube_client_secret }}
+          GDRIVE_CREDENTIALS: ${{ github.event.inputs.gdrive_credentials }}
         run: python main.py '${{ github.event.inputs.file_ids }}' '${{ github.event.inputs.focus_keyword }}'
