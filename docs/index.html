@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoTube - PDF to YouTube AI Automator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            border: 2px dashed var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-upload-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        #fileList {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--glass-border);
+            font-size: 0.85rem;
+            font-family: monospace;
+            color: #a7f3d0;
+            display: none;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>AutoTube</h1>
+        <p class="subtitle">Batch PDF to YouTube Video AI Automator</p>
+
+        <div class="form-group">
+            <label for="googleClientId">Google OAuth Client ID (For Drive Auth)</label>
+            <input type="text" id="googleClientId" placeholder="123456789-xxxx.apps.googleusercontent.com">
+        </div>
+
+        <div class="form-group">
+            <label for="ghRepo">GitHub Repository</label>
+            <input type="text" id="ghRepo" placeholder="username/repo-name">
+        </div>
+
+        <div class="form-group">
+            <label for="ghToken">GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxx">
+        </div>
+
+        <div class="form-group">
+            <label for="focusKeyword">Target SEO Keyword</label>
+            <input type="text" id="focusKeyword" placeholder="e.g. Belajar Python Dasar">
+        </div>
+
+        <div class="form-group">
+            <label>PDF Presentations</label>
+            <div class="file-upload-wrapper">
+                <input type="file" id="pdfFiles" multiple accept=".pdf" />
+                <div class="file-upload-text">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; color: var(--primary)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg><br>
+                    Drag & Drop or Click to Select Multiple PDFs
+                </div>
+            </div>
+            <div id="fileList"></div>
+        </div>
+
+        <button class="btn-primary" id="startBtn" onclick="startProcess()">Start Automation</button>
+
+        <div class="status-box" id="statusBox"></div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        let driveAccessToken = null;
+
+        document.getElementById('pdfFiles').addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            const list = document.getElementById('fileList');
+            list.innerHTML = selectedFiles.map(f => `<div>📄 ${f.name} (${(f.size/1024/1024).toFixed(2)} MB)</div>`).join('');
+        });
+
+        function logStatus(msg) {
+            const box = document.getElementById('statusBox');
+            box.style.display = 'block';
+            box.innerText += `> ${msg}\n`;
+            box.scrollTop = box.scrollHeight;
+            console.log(msg);
+        }
+
+        async function startProcess() {
+            const clientId = document.getElementById('googleClientId').value.trim();
+            const repo = document.getElementById('ghRepo').value.trim();
+            const token = document.getElementById('ghToken').value.trim();
+            const keyword = document.getElementById('focusKeyword').value.trim();
+
+            if(!clientId || !repo || !token || !keyword || selectedFiles.length === 0) {
+                alert("Please fill all fields and select at least one PDF file.");
+                return;
+            }
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('statusBox').innerText = ''; // clear
+
+            logStatus("Initializing Google OAuth...");
+            
+            try {
+                const tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/drive.file',
+                    callback: async (response) => {
+                        if (response.error) {
+                            logStatus("OAuth Error: " + response.error);
+                            document.getElementById('startBtn').disabled = false;
+                            return;
+                        }
+                        driveAccessToken = response.access_token;
+                        logStatus("Successfully authenticated with Google Drive.");
+                        await processFiles(repo, token, keyword);
+                    },
+                });
+                tokenClient.requestAccessToken();
+            } catch (err) {
+                logStatus("Error initializing OAuth: Make sure your Client ID is correct.");
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        async function processFiles(repo, ghToken, keyword) {
+            try {
+                const fileIds = [];
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    let file = selectedFiles[i];
+                    logStatus(`Uploading [${i+1}/${selectedFiles.length}]: ${file.name}...`);
+                    const id = await uploadToDrive(file);
+                    if(id) {
+                        fileIds.push(id);
+                        logStatus(`✅ Uploaded. File ID: ${id}`);
+                    } else {
+                        logStatus(`❌ Failed to upload ${file.name}`);
+                    }
+                }
+
+                if(fileIds.length > 0) {
+                    logStatus("All files uploaded. Triggering GitHub Actions...");
+                    await triggerGitHubAction(repo, ghToken, fileIds, keyword);
+                } else {
+                    logStatus("No files were successfully uploaded. Aborting.");
+                    document.getElementById('startBtn').disabled = false;
+                }
+            } catch (err) {
+                logStatus("Error during processing: " + err.message);
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        async function uploadToDrive(file) {
+            const metadata = {
+                name: file.name,
+                mimeType: 'application/pdf'
+            };
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', file);
+
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer ' + driveAccessToken
+                },
+                body: form
+            });
+
+            if(!res.ok) throw new Error("Upload failed: " + res.statusText);
+            const data = await res.json();
+            return data.id;
+        }
+
+        async function triggerGitHubAction(repo, token, fileIds, keyword) {
+            const url = `https://api.github.com/repos/${repo}/actions/workflows/pdf_to_youtube.yml/dispatches`;
+            const payload = {
+                ref: 'main',
+                inputs: {
+                    file_ids: JSON.stringify(fileIds),
+                    focus_keyword: keyword
+                }
+            };
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok || res.status === 204) {
+                logStatus("🎉 Successfully triggered GitHub Actions!");
+                logStatus("You can now close this tab and check your repository's Actions tab for the rendering process.");
+            } else {
+                const errText = await res.text();
+                logStatus("❌ Failed to trigger Action: " + errText);
+            }
+            document.getElementById('startBtn').disabled = false;
+        }
+    </script>
+</body>
+</html>

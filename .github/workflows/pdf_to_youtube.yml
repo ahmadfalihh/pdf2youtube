@@ -1,0 +1,42 @@
+name: Build YouTube Video from PDFs (Batch)
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_ids:
+        description: 'JSON string of Google Drive File IDs'
+        required: true
+      focus_keyword:
+        description: 'Target SEO keyword'
+        required: true
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg imagemagick
+
+      - name: Configure ImageMagick Policy (for MoviePy text clips if needed)
+        run: |
+          sudo sed -i 's/<policy domain="path" rights="none" pattern="@\*"/<!--<policy domain="path" rights="none" pattern="@\*"-->/' /etc/ImageMagick-6/policy.xml || true
+          
+      - name: Install Python Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Automator Script
+        env:
+          KOBOI_API_KEY: ${{ secrets.KOBOI_API_KEY }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
+        run: python main.py '${{ github.event.inputs.file_ids }}' '${{ github.event.inputs.focus_keyword }}'
