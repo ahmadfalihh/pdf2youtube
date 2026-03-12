@@ -197,6 +197,11 @@
         </div>
 
         <div class="form-group">
+            <label for="gdriveFolderId">Google Drive Folder ID</label>
+            <input type="text" id="gdriveFolderId" placeholder="1A2b3C4d5E6..." required>
+        </div>
+
+        <div class="form-group">
             <label for="ghRepo">GitHub Repository</label>
             <input type="text" id="ghRepo" placeholder="username/repo-name">
         </div>
@@ -263,6 +268,7 @@
 
         async function startProcess() {
             const clientId = document.getElementById('googleClientId').value.trim();
+            const folderId = document.getElementById('gdriveFolderId').value.trim();
             const repo = document.getElementById('ghRepo').value.trim();
             const token = document.getElementById('ghToken').value.trim();
             const keyword = document.getElementById('focusKeyword').value.trim();
@@ -270,7 +276,7 @@
             const ytSecret = document.getElementById('youtubeSecret').value.trim();
             const driveSecret = document.getElementById('gdriveSecret').value.trim();
 
-            if(!clientId || !repo || !token || !keyword || !koboiKey || !ytSecret || !driveSecret || selectedFiles.length === 0) {
+            if(!clientId || !folderId || !repo || !token || !keyword || !koboiKey || !ytSecret || !driveSecret || selectedFiles.length === 0) {
                 alert("Please fill all fields, provide credentials, and select at least one PDF file.");
                 return;
             }
@@ -292,7 +298,7 @@
                         }
                         driveAccessToken = response.access_token;
                         logStatus("Successfully authenticated with Google Drive.");
-                        await processFiles(repo, token, keyword, koboiKey, ytSecret, driveSecret);
+                        await processFiles(repo, token, keyword, koboiKey, ytSecret, driveSecret, folderId);
                     },
                 });
                 tokenClient.requestAccessToken();
@@ -302,13 +308,13 @@
             }
         }
 
-        async function processFiles(repo, ghToken, keyword, koboiKey, ytSecret, driveSecret) {
+        async function processFiles(repo, ghToken, keyword, koboiKey, ytSecret, driveSecret, folderId) {
             try {
                 const fileIds = [];
                 for (let i = 0; i < selectedFiles.length; i++) {
                     let file = selectedFiles[i];
                     logStatus(`Uploading [${i+1}/${selectedFiles.length}]: ${file.name}...`);
-                    const id = await uploadToDrive(file);
+                    const id = await uploadToDrive(file, folderId);
                     if(id) {
                         fileIds.push(id);
                         logStatus(`✅ Uploaded. File ID: ${id}`);
@@ -330,11 +336,14 @@
             }
         }
 
-        async function uploadToDrive(file) {
+        async function uploadToDrive(file, folderId) {
             const metadata = {
                 name: file.name,
                 mimeType: 'application/pdf'
             };
+            if(folderId) {
+                metadata.parents = [folderId];
+            }
 
             const form = new FormData();
             form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
